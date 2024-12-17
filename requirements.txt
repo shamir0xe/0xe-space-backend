@@ -1,0 +1,12 @@
+fastapi
+pylib-0xe
+coloredlogs
+ulid-py
+numpy
+pillow
+pydantic
+SQLAlchemy
+psycopg
+psycopg[binary,pool]
+requests
+python-multipart
