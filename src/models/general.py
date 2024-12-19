@@ -11,10 +11,10 @@ class General(DecoratedBase):
     __tablename__ = "generals"
 
     key: Mapped[str] = mapped_column(String, index=True, unique=True)
-    value: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    value: Mapped[str]
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE")
     )
-    created_by: Mapped["User"] = relationship(
+    updated_by: Mapped["User"] = relationship(
         back_populates="general_pairs", single_parent=True
     )
