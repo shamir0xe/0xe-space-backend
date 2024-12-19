@@ -1,16 +1,16 @@
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
-
-from pylib_0xe.config.config import Config
 from fastapi import APIRouter, FastAPI, Request
 
-from decorators.auth import auth
-from models.user import User
-from types.user_roles import UserRoles
+from src.repositories.general_repository import GeneralRepository
+from src.repositories.repository import Repository
+from src.decorators.auth import auth
+from src.models.general import General
+from src.models.user import User
+from src.types.user_roles import UserRoles
+from src.types.exception_types import ExceptionTypes
 
-
-version = Config.read("api.version")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,16 +31,26 @@ router = APIRouter(
 )
 
 
-@router.post("/get-about-me")
+@router.get("/get-key")
 async def get_value(key: str) -> str:
-    pair = GeneralRepository(General).read_by_key(key=key)
+    pair, _ = GeneralRepository(General).read_by_key(key=key)
     return pair.value
 
 
-@router.post("/set-about-me")
+@router.get("/set-key")
 @auth(UserRoles.ADMIN)
 async def set_value(
     key: str, text: str, request: Request, user: Optional[User] = None
 ) -> str:
-    general = Repository(General).create(key=key, value=text)
+    if not user:
+        raise Exception(ExceptionTypes.AUTH_REQUIRED)
+    try:
+        general, _ = Repository(General).create(
+            General(key=key, value=text, updated_by=user)
+        )
+    except Exception:
+        general, _ = GeneralRepository(General).read_by_key(key=key)
+        general.value = text
+        general.updated_by = user
+        general, _ = Repository(General).update(general)
     return general.value
