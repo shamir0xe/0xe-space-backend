@@ -17,5 +17,5 @@ class User(DecoratedBase):
     is_admin: Mapped[bool] = mapped_column(String, default=False)
     token: Mapped["Token"] = relationship(back_populates="user", cascade="all")
     general_pairs: Mapped[List["General"]] = relationship(
-        back_populates="created_by", cascade="all"
+        back_populates="updated_by", cascade="all"
     )
