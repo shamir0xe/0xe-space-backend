@@ -10,13 +10,13 @@ class User(DecoratedBase):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(String, index=True, unique=True)
-    password: Mapped[str] = mapped_column(String(64))
+    password: Mapped[bytes]
     name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     is_admin: Mapped[bool] = mapped_column(String, default=False)
     token: Mapped["Token"] = relationship(
-        back_populates="user", cascade="all", uselist=False
+        back_populates="user", cascade="all, delete-orphan", uselist=False
     )
     general_pairs: Mapped[List["General"]] = relationship(
         back_populates="updated_by", cascade="all"
