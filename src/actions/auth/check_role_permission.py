@@ -1,4 +1,4 @@
-from models.user import User
+from src.models.user import User
 from src.types.user_roles import UserRoles
 
 

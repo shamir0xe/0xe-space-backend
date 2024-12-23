@@ -47,9 +47,13 @@ class Repository(Generic[T], BaseRepository[T, str]):
             session.query(self.model).filter((self.model.id == entity.id)).one_or_none()
         )
         if not model:
+            LOGGER.info(f"??? {entity.id}")
             # model = self.model(**entity.to_dict(exclude={"updated_at", "created_at"}))
             session.add(entity)
             session.flush()
+        else:
+            LOGGER.info(model.to_dict())
+            return model, session
         return entity, session
 
     @db_session(DatabaseTypes.I)
@@ -66,6 +70,7 @@ class Repository(Generic[T], BaseRepository[T, str]):
             exclude={"updated_at", "created_at", "id"}
         ).items():
             setattr(model, key, value)
+        session.flush()
         return model, session
 
     @db_session(DatabaseTypes.I)
