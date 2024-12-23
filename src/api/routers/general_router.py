@@ -40,10 +40,11 @@ async def get_value(key: str) -> str:
 @router.get("/set-key")
 @auth(UserRoles.ADMIN)
 async def set_value(
-    key: str, text: str, request: Request, user: Optional[User] = None
+    key: str, text: str, request: Request, user_id: Optional[str] = None
 ) -> str:
-    if not user:
+    if not user_id:
         raise HTTPException(401, ExceptionTypes.AUTH_REQUIRED.value)
+    user, _ = Repository(User).read_by_id(user_id)
     try:
         general, _ = Repository(General).create(
             General(key=key, value=text, updated_by=user)
