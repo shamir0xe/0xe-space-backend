@@ -10,7 +10,9 @@ if TYPE_CHECKING:
 class Token(DecoratedBase):
     __tablename__ = "tokens"
 
-    user: Mapped["User"] = relationship(back_populates="token", single_parent=True)
+    user: Mapped["User"] = relationship(
+        back_populates="token", single_parent=True, uselist=False
+    )
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE")
     )
