@@ -40,33 +40,33 @@ class Repository(Generic[T], BaseRepository[T, str]):
     def create(
         self, entity: T, session: Optional[Session] = None, *args, **kwargs
     ) -> Tuple[T, Session]:
-        """Create operation. If the entity already exists, will pass"""
+        """Create operation"""
         if not session:
             raise ServerException(ExceptionTypes.DB_SESSION_NOT_FOUND)
         model = (
             session.query(self.model).filter((self.model.id == entity.id)).one_or_none()
         )
         if not model:
-            model = self.model(**entity.to_dict(exclude={"updated_at", "created_at"}))
-            session.add(model)
+            # model = self.model(**entity.to_dict(exclude={"updated_at", "created_at"}))
+            session.add(entity)
             session.flush()
-        return model, session
+        return entity, session
 
     @db_session(DatabaseTypes.I)
     def update(
         self, entity: T, session: Optional[Session] = None, *args, **kwargs
     ) -> Tuple[T, Session]:
-        """Upsert operation"""
+        """Update operation"""
         if not session:
             raise ServerException(ExceptionTypes.DB_SESSION_NOT_FOUND)
-        LOGGER.info(entity.to_dict(exclude={"id"}))
-        session.query(self.model).filter(self.model.id == entity.id).update(
-            entity.to_dict(exclude={"updated_at", "created_at", "id"})
-        )
-        session.flush()
-        if not entity.id:
-            raise ServerException(ExceptionTypes.ID_INVALID)
-        return entity, session
+        model = session.query(self.model).filter(self.model.id == entity.id).first()
+        if not model:
+            raise Exception(ExceptionTypes.ID_INVALID)
+        for key, value in entity.to_dict(
+            exclude={"updated_at", "created_at", "id"}
+        ).items():
+            setattr(model, key, value)
+        return model, session
 
     @db_session(DatabaseTypes.I)
     def delete(
