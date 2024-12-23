@@ -6,8 +6,7 @@ from pylib_0xe.config.config import Config
 from src.orchestrators.initialize import Initialize
 from .routers.auth_router import router as auth_router
 from .routers.general_router import router as general_router
-
-# from .user_router import router as user_router
+from .routers.user_router import router as user_router
 
 
 version = Config.read("api.version")
@@ -35,4 +34,4 @@ router = APIRouter(
 
 router.include_router(general_router)
 router.include_router(auth_router)
-# router.include_router(user_router)
+router.include_router(user_router)
