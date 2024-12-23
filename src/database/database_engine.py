@@ -1,7 +1,7 @@
 import logging
+from pylib_0xe.database.infos.database_info import DatabaseInfo
 from sqlalchemy import Engine, create_engine
 
-from pylib_0xe.database.infos.postgres_database_info import PostgresDatabaseInfo
 from pylib_0xe.decorators.singleton import singleton
 from pylib_0xe.config.config import Config
 from ..models.decorated_base import DecoratedBase
@@ -14,7 +14,7 @@ class DatabaseEngine:
     engine: Engine
 
     def __init__(self) -> None:
-        postgres_data = PostgresDatabaseInfo(**Config.read_env("db.postgres"))
+        postgres_data = DatabaseInfo(**Config.read_env("db"))
         LOGGER.info(f"pg-data: {postgres_data}")
         self.engine = create_engine(
             url="postgresql+psycopg://{}:{}@{}:{}/{}".format(
