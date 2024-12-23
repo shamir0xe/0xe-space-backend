@@ -1,7 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 
 from src.repositories.general_repository import GeneralRepository
 from src.repositories.repository import Repository
@@ -43,14 +43,14 @@ async def set_value(
     key: str, text: str, request: Request, user: Optional[User] = None
 ) -> str:
     if not user:
-        raise Exception(ExceptionTypes.AUTH_REQUIRED)
+        raise HTTPException(401, ExceptionTypes.AUTH_REQUIRED.value)
     try:
         general, _ = Repository(General).create(
             General(key=key, value=text, updated_by=user)
         )
     except Exception:
         general, _ = GeneralRepository(General).read_by_key(key=key)
-        general.value = text
-        general.updated_by = user
-        general, _ = Repository(General).update(general)
+    general.value = text
+    general.updated_by = user
+    general, _ = Repository(General).update(general)
     return general.value
