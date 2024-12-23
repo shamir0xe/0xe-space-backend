@@ -26,5 +26,5 @@ class DecoratedBase(DeclarativeBase):
         return {
             column.name: getattr(self, column.name)
             for column in self.__table__.columns
-            if column not in exclude
+            if column.name not in exclude
         }
