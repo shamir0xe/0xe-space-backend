@@ -2,12 +2,6 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import APIRouter, FastAPI, HTTPException, Request
-from pylib_0xe.database.actions.release_session import ReleaseSession
-from pylib_0xe.database.mediators.engine_mediator import DatabaseTypes
-
-from src.facades.password_facade import PasswordFacade
-from src.models.token import Token
-from src.repositories.user_repository import UserRepository
 from src.repositories.repository import Repository
 from src.decorators.auth import auth
 from src.models.user import User
