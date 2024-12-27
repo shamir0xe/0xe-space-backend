@@ -1,6 +1,9 @@
 from typing import List, Optional
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from src.models.comment import Comment
+from src.models.post import Post
+from src.models.rating import Rating
 from src.models.decorated_base import DecoratedBase
 from src.models.token import Token
 from src.models.general import General
@@ -20,4 +23,13 @@ class User(DecoratedBase):
     )
     general_pairs: Mapped[List["General"]] = relationship(
         back_populates="updated_by", cascade="all"
+    )
+    ratings: Mapped[List["Rating"]] = relationship(
+        back_populates="created_by", cascade="all, delete-orphan"
+    )
+    posts: Mapped[List["Post"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    comments: Mapped[List["Comment"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
