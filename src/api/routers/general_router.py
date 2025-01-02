@@ -48,13 +48,13 @@ async def set_value(
         raise HTTPException(401, ExceptionTypes.AUTH_REQUIRED.value)
     user, session = Repository(User).read_by_id(user_id, db_session_keep_alive=True)
     try:
-        general, _ = Repository(General).create(
-            General(key=key, value=text, updated_by=user)
-        )
+        key_value = General(key=key, value=text, updated_by=user)
+        general, session = Repository(General).create(key_value, session=session)
     except Exception:
         general, _ = GeneralRepository(General).read_by_key(key=key)
+        session.add(general)
     general.value = text
-    general.user_id = user.id
+    general.updated_by = user
     general, session = Repository(General).update(general, session=session)
     ReleaseSession(DatabaseTypes.I, session).release()
     return general.value
