@@ -2,6 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import APIRouter, FastAPI, HTTPException, Request
+from pylib_0xe.types.database_types import DatabaseTypes
+from pylib_0xe.database.actions.release_session import ReleaseSession
 
 from src.repositories.general_repository import GeneralRepository
 from src.repositories.repository import Repository
@@ -44,7 +46,7 @@ async def set_value(
 ) -> str:
     if not user_id:
         raise HTTPException(401, ExceptionTypes.AUTH_REQUIRED.value)
-    user, _ = Repository(User).read_by_id(user_id)
+    user, session = Repository(User).read_by_id(user_id, db_session_keep_alive=True)
     try:
         general, _ = Repository(General).create(
             General(key=key, value=text, updated_by=user)
@@ -52,6 +54,7 @@ async def set_value(
     except Exception:
         general, _ = GeneralRepository(General).read_by_key(key=key)
     general.value = text
-    general.updated_by = user
-    general, _ = Repository(General).update(general)
+    general.user_id = user.id
+    general, session = Repository(General).update(general, session=session)
+    ReleaseSession(DatabaseTypes.I, session).release()
     return general.value
