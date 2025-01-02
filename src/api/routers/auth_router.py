@@ -5,6 +5,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from pylib_0xe.database.actions.release_session import ReleaseSession
 from pylib_0xe.database.mediators.engine_mediator import DatabaseTypes
 
+from src.actions.auth.check_token_expired import CheckTokenExpired
 from src.facades.password_facade import PasswordFacade
 from src.models.token import Token
 from src.repositories.user_repository import UserRepository
@@ -40,8 +41,9 @@ async def login(username: str, password: str) -> str:
         username, db_session_keep_alive=True
     )
     if PasswordFacade.verify_password(password, user.password):
-        user.token = Token()
-        session.add(user)
+        if not user.token or CheckTokenExpired(user.token).check():
+            user.token = Token()
+            session.add(user)
         # user, session = Repository(User).update(entity=user, session=session)
     else:
         ReleaseSession(DatabaseTypes.I, session).release()
