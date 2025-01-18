@@ -12,18 +12,20 @@ LOGGER = logging.getLogger("[ENGINE]")
 @singleton
 class DatabaseEngine:
     engine: Engine
+    url: str
 
     def __init__(self) -> None:
         postgres_data = DatabaseInfo(**Config.read_env("db"))
         LOGGER.info(f"pg-data: {postgres_data}")
+        self.url = "postgresql+psycopg://{}:{}@{}:{}/{}".format(
+            postgres_data.user,
+            postgres_data.password,
+            postgres_data.host,
+            postgres_data.port,
+            postgres_data.db,
+        )
         self.engine = create_engine(
-            url="postgresql+psycopg://{}:{}@{}:{}/{}".format(
-                postgres_data.user,
-                postgres_data.password,
-                postgres_data.host,
-                postgres_data.port,
-                postgres_data.db,
-            ),
+            url=self.url,
             echo=False,
             pool_pre_ping=True,
         )

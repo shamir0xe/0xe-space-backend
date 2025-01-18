@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import String
+from sqlalchemy import Boolean, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.comment import Comment
 from src.models.post import Post
@@ -17,7 +17,8 @@ class User(DecoratedBase):
     name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    is_admin: Mapped[bool] = mapped_column(String, default=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    is_email_confirmed: Mapped[bool] = mapped_column(Boolean, server_default=false())
     token: Mapped["Token"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
     )
