@@ -1,9 +1,9 @@
 from typing import Optional, Tuple
-
+from sqlalchemy.orm import Session
 from pylib_0xe.decorators.db_session import db_session
 from pylib_0xe.types.database_types import DatabaseTypes
-from sqlalchemy.orm import Session
 from pylib_0xe.types.exception_types import ExceptionTypes as Ex0xe
+
 from src.models.user import User
 from src.repositories.repository import Repository
 from src.types.exception_types import ExceptionTypes
@@ -19,4 +19,15 @@ class UserRepository(Repository[User]):
         model = session.query(User).filter(User.username == username).first()
         if not model:
             raise Exception(ExceptionTypes.USERNAME_NOT_FOUND)
+        return model, session
+
+    @db_session(DatabaseTypes.I)
+    def read_by_email(
+        self, email: str, session: Optional[Session] = None, *args, **kwargs
+    ) -> Tuple[User, Session]:
+        if not session:
+            raise Exception(Ex0xe.DB_SESSION_NOT_FOUND)
+        model = session.query(User).filter(User.email == email).first()
+        if not model:
+            raise Exception(ExceptionTypes.EMAIL_NOT_FOUND)
         return model, session

@@ -5,6 +5,8 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 from pylib_0xe.database.actions.release_session import ReleaseSession
 from pylib_0xe.database.mediators.engine_mediator import DatabaseTypes
 
+from src.facades.email_facade import EmailFacade
+from src.models.verification import Verification
 from src.actions.auth.check_token_expired import CheckTokenExpired
 from src.facades.password_facade import PasswordFacade
 from src.models.token import Token
@@ -14,6 +16,11 @@ from src.decorators.auth import auth
 from src.models.user import User
 from src.types.exception_types import ExceptionTypes
 from src.types.api.masked_user import MaskedUser
+from src.types.email_templates import EmailTemplates
+from src.types.verified_by import VerifiedBy
+from src.validators.email_validator import EmailValidator
+from src.validators.username_validator import UsernameValidator
+from types.api.server_response import ServerResponse
 
 
 LOGGER = logging.getLogger(__name__)
@@ -40,17 +47,94 @@ async def login(username: str, password: str) -> str:
     user, session = UserRepository(User).read_by_username(
         username, db_session_keep_alive=True
     )
-    if PasswordFacade.verify_password(password, user.password):
+    if (
+        PasswordFacade.verify_password(password, user.password)
+        and user.is_email_confirmed
+    ):
         if not user.token or CheckTokenExpired(user.token).check():
             user.token = Token()
             session.add(user)
-        # user, session = Repository(User).update(entity=user, session=session)
     else:
         ReleaseSession(DatabaseTypes.I, session).release()
-        raise HTTPException(401, "Username and password do not match")
+        # Modify returning message
+        message = "Username and password do not match"
+        if not user.is_email_confirmed:
+            message = "Need to confirm your email first"
+        raise HTTPException(401, message)
     session.commit()
     ReleaseSession(DatabaseTypes.I, session).release()
     return user.token.id
+
+
+@router.get("/confirm-code")
+async def confirm_code(
+    username: str, code: str, password: Optional[str] = None
+) -> ServerResponse:
+    # TODO: imp
+    return ServerResponse()
+
+
+@router.get("/reset-password")
+async def reset_password(username: str) -> ServerResponse:
+    # TODO: imp
+    return ServerResponse()
+
+
+@router.get("/register")
+async def register(
+    username: str,
+    password: str,
+    email: str,
+    name: Optional[str] = None,
+) -> MaskedUser:
+    # Validations
+    if not UsernameValidator(username).validate():
+        raise HTTPException(400, "Invalid username")
+    if not EmailValidator(email).validate():
+        raise HTTPException(400, "Invalid email")
+    if not password:
+        raise HTTPException(400, "Password should not be empty")
+
+    # Uniqueness
+    try:
+        UserRepository(User).read_by_username(username)
+        raise HTTPException(409, "Username already exists")
+    except:
+        # We can proceed
+        pass
+    try:
+        UserRepository(User).read_by_email(email)
+        raise HTTPException(409, "Email address already exists")
+    except:
+        # We can proceed
+        pass
+
+    # Create the user
+    user, session = Repository(User).create(
+        User(
+            username=username,
+            email=email,
+            name=name,
+            password=PasswordFacade.hash(password),
+        ),
+        db_session_keey_alive=True,
+    )
+
+    # Send the verification code
+    user.verification = Verification(by=VerifiedBy.EMAIL)
+    session.commit()
+    ReleaseSession(DatabaseTypes.I, session).release()
+
+    try:
+        EmailFacade.send(
+            email=email,
+            template=EmailTemplates.VERIFICATION_CODE,
+            code=user.verification.code,
+        )
+    except:
+        raise HTTPException(500, "Cannot send the email")
+
+    return MaskedUser(**user.to_dict())
 
 
 @router.get("/logout")

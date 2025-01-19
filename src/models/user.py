@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlalchemy import Boolean, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from src.models.verification import Verification
 from src.models.comment import Comment
 from src.models.post import Post
 from src.models.rating import Rating
@@ -13,9 +14,11 @@ class User(DecoratedBase):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(String, index=True, unique=True)
+    email: Mapped[Optional[str]] = mapped_column(
+        String, nullable=False, index=True, unique=True
+    )
     password: Mapped[bytes]
     name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, server_default=false())
     is_email_confirmed: Mapped[bool] = mapped_column(Boolean, server_default=false())
@@ -33,4 +36,7 @@ class User(DecoratedBase):
     )
     comments: Mapped[List["Comment"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
+    )
+    verification: Mapped["Verification"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
     )
