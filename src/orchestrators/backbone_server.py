@@ -25,13 +25,14 @@ class BackboneServer:
         email = self._uri_encode(email)
         title = self._uri_encode(title)
         body = self._uri_encode(body)
-        response = self._request("/send_mail", email=email, title=title, body=body)
+        response = self._request("/mail/send-mail", email=email, title=title, body=body)
         return ServerResponse(status=response.status_code, message=response.json())
 
     def _ping(self) -> bool:
-        # Checks whether the credentials have more remaining time
+        """Checks whether the credentials have more remaining time"""
         try:
-            response = self._request("/ping")
+            response = self._request("/utils/ping")
+            response.raise_for_status()
             if response.json().remaining_time > Config.read(
                 "api.ping.acceptable_remaining_time"
             ):
@@ -42,7 +43,7 @@ class BackboneServer:
 
     def _login(self) -> ServerResponse:
         response = self._request(
-            "/login", username=self.username, password=self.password
+            "/auth/login", username=self.username, password=self.password
         )
         self.token = response.json().strip()
         return ServerResponse(status=response.status_code, message=response.json())
