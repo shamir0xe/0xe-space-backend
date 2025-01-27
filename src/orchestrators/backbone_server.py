@@ -1,10 +1,13 @@
 from typing import Any
+import logging
 import urllib.parse
 import requests
 from pylib_0xe.database.mediators.engine_mediator import singleton
 from pylib_0xe.config.config import Config
 
 from src.types.api.server_response import ServerResponse
+
+LOGGER = logging.getLogger(__name__)
 
 
 @singleton
@@ -24,9 +27,10 @@ class BackboneServer:
             self._login()
         email = self._uri_encode(email)
         title = self._uri_encode(title)
-        body = self._uri_encode(body)
-        response = self._request("/mail/send-mail", email=email, title=title, body=body)
-        return ServerResponse(status=response.status_code, message=response.json())
+        response = self._request(
+            "/mail/send-mail", email=email, title=title, request_body=body
+        )
+        return ServerResponse(status=response.status_code, message=response.text)
 
     def _ping(self) -> bool:
         """Checks whether the credentials have more remaining time"""
@@ -42,17 +46,21 @@ class BackboneServer:
         return False
 
     def _login(self) -> ServerResponse:
+        LOGGER.info("in the login request")
+        self.token = ""
         response = self._request(
             "/auth/login", username=self.username, password=self.password
         )
+        response.raise_for_status()
         self.token = response.json().strip()
-        return ServerResponse(status=response.status_code, message=response.json())
+        LOGGER.info(f"token is {self.token}")
+        return ServerResponse(status=response.status_code, message=response.text)
 
     def _uri_encode(self, value: Any) -> str:
         return urllib.parse.quote(value)
 
     def _request(
-        self, endpoint: str, method: str = "POST", **kwargs
+        self, endpoint: str, method: str = "POST", request_body: str = "", **kwargs
     ) -> requests.Response:
         # Create base URL
         url = self.base_url.strip()
@@ -71,11 +79,14 @@ class BackboneServer:
             url += f"{key}={value}"
 
         # Set authentication header
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+        }
 
         # Send request
         if method == "POST":
-            return requests.post(url, headers=headers)
+            return requests.post(url, headers=headers, json=request_body)
         elif method == "GET":
             return requests.get(url, headers=headers)
         else:

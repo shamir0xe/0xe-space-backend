@@ -3,6 +3,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.decorated_base import DecoratedBase
 from src.types.verified_by import VerifiedBy
+from random import randint
 
 if TYPE_CHECKING:
     from src.models.user import User
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 class Verification(DecoratedBase):
     __tablename__ = "verifications"
 
-    code: Mapped[str]
+    code: Mapped[str] = mapped_column(default=lambda: str(randint(10000, 99999)))
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE")
     )

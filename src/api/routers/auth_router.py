@@ -1,4 +1,5 @@
 import logging
+import traceback
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -20,7 +21,7 @@ from src.types.email_templates import EmailTemplates
 from src.types.verified_by import VerifiedBy
 from src.validators.email_validator import EmailValidator
 from src.validators.username_validator import UsernameValidator
-from types.api.server_response import ServerResponse
+from src.types.api.server_response import ServerResponse
 
 
 LOGGER = logging.getLogger(__name__)
@@ -80,7 +81,7 @@ async def reset_password(username: str) -> ServerResponse:
     return ServerResponse()
 
 
-@router.get("/register")
+@router.post("/register")
 async def register(
     username: str,
     password: str,
@@ -96,18 +97,21 @@ async def register(
         raise HTTPException(400, "Password should not be empty")
 
     # Uniqueness
+    control = True
     try:
         UserRepository(User).read_by_username(username)
+        control = False
         raise HTTPException(409, "Username already exists")
-    except:
-        # We can proceed
-        pass
+    except Exception as e:
+        if not control:
+            raise e
     try:
         UserRepository(User).read_by_email(email)
+        control = False
         raise HTTPException(409, "Email address already exists")
-    except:
-        # We can proceed
-        pass
+    except Exception as e:
+        if not control:
+            raise e
 
     # Create the user
     user, session = Repository(User).create(
@@ -116,6 +120,8 @@ async def register(
             email=email,
             name=name,
             password=PasswordFacade.hash(password),
+            is_admin=False,
+            is_email_confirmed=False,
         ),
         db_session_keey_alive=True,
     )
@@ -123,17 +129,54 @@ async def register(
     # Send the verification code
     user.verification = Verification(by=VerifiedBy.EMAIL)
     session.commit()
-    ReleaseSession(DatabaseTypes.I, session).release()
 
     try:
         EmailFacade.send(
             email=email,
             template=EmailTemplates.VERIFICATION_CODE,
             code=user.verification.code,
+            username=user.username,
+            user_id=user.id,
         )
     except:
+        ReleaseSession(DatabaseTypes.I, session).release()
         raise HTTPException(500, "Cannot send the email")
 
+    ReleaseSession(DatabaseTypes.I, session).release()
+    return MaskedUser(**user.to_dict())
+
+
+@router.post("/resend-code")
+async def resend_code(username: str, email: str) -> MaskedUser:
+    session = None
+    try:
+        user, session = UserRepository(User).read_by_username(
+            username, db_session_keep_alive=True
+        )
+        if user.email != email:
+            ReleaseSession(DatabaseTypes.I, session).release()
+            raise Exception("Username & password dont match")
+    except Exception:
+        raise HTTPException(401, "Username and email don't match")
+
+    user.verification = Verification(by=VerifiedBy.EMAIL)
+    session.commit()
+
+    # TODO: Add a rate-limit for sending email
+    try:
+        EmailFacade.send(
+            email=email,
+            template=EmailTemplates.VERIFICATION_CODE,
+            code=user.verification.code,
+            username=user.username,
+            user_id=user.id,
+        )
+    except:
+        traceback.print_exc()
+        ReleaseSession(DatabaseTypes.I, session).release()
+        raise HTTPException(500, "Cannot send the email")
+
+    ReleaseSession(DatabaseTypes.I, session).release()
     return MaskedUser(**user.to_dict())
 
 
