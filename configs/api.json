@@ -3,5 +3,10 @@
   "token_timeout": 10800,
   "ping": {
     "acceptable_remaining_time": 60
+  },
+  "auth": {
+    "confirm_code": {
+      "rate_limit": 5
+    }
   }
 }

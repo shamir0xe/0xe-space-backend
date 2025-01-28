@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from pylib_0xe.database.actions.release_session import ReleaseSession
 from pylib_0xe.database.mediators.engine_mediator import DatabaseTypes
+from pylib_0xe.config.config import Config
 
 from src.facades.email_facade import EmailFacade
 from src.models.verification import Verification
@@ -71,14 +72,33 @@ async def login(username: str, password: str) -> str:
 async def confirm_code(
     username: str, code: str, password: Optional[str] = None
 ) -> ServerResponse:
-    # TODO: imp
-    return ServerResponse()
+    """Code confirmation, returns the token as the message if
+    the provided code is correct"""
+    # TODO: Add a rate-limit for password confirmation
+    try:
+        user, session = UserRepository(User).read_by_username(
+            username, db_session_keep_alive=True
+        )
+    except:
+        raise HTTPException(400, "Invalid username")
+    user.verification.try_count += 1
+    if user.verification.try_count > Config.read("api.auth.confirm_code.rate_limit"):
+        ReleaseSession(DatabaseTypes.I, session).release()
+        raise HTTPException(429, "Too many requests")
 
+    match = user.verification.code == code
+    if match and password:
+        user.password = PasswordFacade.hash(password)
+        user.is_email_confirmed = True
+    if not user.token or CheckTokenExpired(user.token).check():
+        user.token = Token()
 
-@router.get("/reset-password")
-async def reset_password(username: str) -> ServerResponse:
-    # TODO: imp
-    return ServerResponse()
+    session.commit()
+    token = user.token.id
+    ReleaseSession(DatabaseTypes.I, session).release()
+    if match:
+        return ServerResponse(message=token)
+    return ServerResponse(status=401, message="Incorrect code")
 
 
 @router.post("/register")
@@ -155,7 +175,7 @@ async def resend_code(username: str, email: str) -> MaskedUser:
         )
         if user.email != email:
             ReleaseSession(DatabaseTypes.I, session).release()
-            raise Exception("Username & password dont match")
+            raise Exception("Username & email don't match")
     except Exception:
         raise HTTPException(401, "Username and email don't match")
 
