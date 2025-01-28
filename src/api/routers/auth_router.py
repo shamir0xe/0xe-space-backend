@@ -143,7 +143,7 @@ async def register(
             is_admin=False,
             is_email_confirmed=False,
         ),
-        db_session_keey_alive=True,
+        db_session_keep_alive=True,
     )
 
     # Send the verification code
@@ -159,6 +159,7 @@ async def register(
             user_id=user.id,
         )
     except:
+        traceback.print_exc()
         ReleaseSession(DatabaseTypes.I, session).release()
         raise HTTPException(500, "Cannot send the email")
 
