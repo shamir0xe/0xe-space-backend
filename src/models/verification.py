@@ -22,3 +22,4 @@ class Verification(DecoratedBase):
         uselist=False,
     )
     by: Mapped[VerifiedBy]
+    try_count: Mapped[int] = mapped_column(default=0)
