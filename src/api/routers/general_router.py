@@ -35,7 +35,10 @@ router = APIRouter(
 
 @router.get("/get-key")
 async def get_value(key: str) -> str:
-    pair, _ = GeneralRepository(General).read_by_key(key=key)
+    try:
+        pair, _ = GeneralRepository(General).read_by_key(key=key)
+    except:
+        raise HTTPException(400, "There is no pair with the given key")
     return pair.value
 
 

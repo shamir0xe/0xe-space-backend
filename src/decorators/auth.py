@@ -2,7 +2,7 @@ import logging
 import functools
 from typing import Callable
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from src.actions.auth.check_role_permission import CheckRolePermission
 from src.facades.authentication import Authentication
 from src.types.exception_types import ExceptionTypes
@@ -23,7 +23,7 @@ def auth(role: UserRoles = UserRoles.REGULAR) -> Callable:
 
             user = Authentication().get_user(request=request)
             if not CheckRolePermission.check(user=user, role=role):
-                raise Exception(ExceptionTypes.PERMISSION_REQUIRED)
+                raise HTTPException(403, ExceptionTypes.PERMISSION_REQUIRED.value)
             kwargs["user_id"] = user.id
 
             result = await func(*args, **kwargs)
