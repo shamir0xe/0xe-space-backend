@@ -44,7 +44,7 @@ router = APIRouter(
 )
 
 
-@router.post("/login")
+@router.get("/login")
 async def login(username: str, password: str) -> str:
     user, session = UserRepository(User).read_by_username(
         username, db_session_keep_alive=True
@@ -101,7 +101,7 @@ async def confirm_code(
     return ServerResponse(status=401, message="Incorrect code")
 
 
-@router.post("/register")
+@router.get("/register")
 async def register(
     username: str,
     password: str,
@@ -166,7 +166,7 @@ async def register(
     return MaskedUser(**user.to_dict())
 
 
-@router.post("/resend-code")
+@router.get("/resend-code")
 async def resend_code(username: str, email: str) -> MaskedUser:
     session = None
     try:
