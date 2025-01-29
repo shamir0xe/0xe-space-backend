@@ -92,6 +92,9 @@ async def confirm_code(
         user.is_email_confirmed = True
     if not user.token or CheckTokenExpired(user.token).check():
         user.token = Token()
+    if match:
+        # Delete the verification entirely after the first match
+        del user.verification
 
     session.commit()
     token = user.token.id
