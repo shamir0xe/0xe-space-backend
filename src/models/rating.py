@@ -21,19 +21,20 @@ class Rating(DecoratedBase):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped["User"] = relationship(back_populates="ratings")
 
-    # Polymorphic target type
+    # Polymorphic --start
     ratingable_id: Mapped[str] = mapped_column(String, nullable=False)
     ratingable_type: Mapped[RatingableTypes] = mapped_column(
         ENUM("post", "comment", name="ratingable_types"), nullable=False
     )
+    # Polymorphic --end
 
     post: Mapped["Post"] = relationship(
-        "Post",
         primaryjoin="and_(Rating.ratingable_type=='post', foreign(Rating.ratingable_id)==Post.id)",
         uselist=False,
+        overlaps="comment",
     )
     comment: Mapped["Comment"] = relationship(
-        "Comment",
         primaryjoin="and_(Rating.ratingable_type=='comment', foreign(Rating.ratingable_id)==Comment.id)",
         uselist=False,
+        overlaps="post",
     )

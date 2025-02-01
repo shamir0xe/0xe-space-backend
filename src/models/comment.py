@@ -19,7 +19,8 @@ class Comment(DecoratedBase):
     post: Mapped["Post"] = relationship(back_populates="comments")
 
     ratings: Mapped[List["Rating"]] = relationship(
-        primaryjoin="and_(Rating.ratingable_type=='comment', foreign(Rating.ratingable_id)==Comment.id)",
+        primaryjoin="and_(Comment.id==foreign(Rating.ratingable_id), Rating.ratingable_type=='comment')",
         lazy="dynamic",
         cascade="all, delete-orphan",
+        overlaps="post,ratings,comment",
     )

@@ -22,7 +22,8 @@ class Post(DecoratedBase):
     )
 
     ratings: Mapped[List["Rating"]] = relationship(
-        primaryjoin="and_(Rating.ratingable_type=='post', foreign(Rating.ratingable_id)==Post.id)",
+        primaryjoin="and_(Post.id==foreign(Rating.ratingable_id), Rating.ratingable_type=='post')",
         lazy="dynamic",
         cascade="all, delete-orphan",
+        overlaps="comment,ratings,post",
     )
