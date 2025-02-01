@@ -1,7 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Body, FastAPI, HTTPException, Request
 from pylib_0xe.types.database_types import DatabaseTypes
 from pylib_0xe.database.actions.release_session import ReleaseSession
 
@@ -42,10 +42,10 @@ async def get_value(key: str) -> str:
     return pair.value
 
 
-@router.get("/set-key")
+@router.post("/set-key")
 @auth(UserRoles.ADMIN)
 async def set_value(
-    key: str, text: str, request: Request, user_id: Optional[str] = None
+    key: str, request: Request, user_id: Optional[str] = None, text: str = Body(...)
 ) -> str:
     if not user_id:
         raise HTTPException(401, ExceptionTypes.AUTH_REQUIRED.value)
