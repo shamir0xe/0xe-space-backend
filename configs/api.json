@@ -1,5 +1,5 @@
 {
-  "version": "0.0.1",
+  "version": "0.0.2",
   "token_timeout": 10800,
   "ping": {
     "acceptable_remaining_time": 60
